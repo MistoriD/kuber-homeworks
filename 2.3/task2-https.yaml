@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: secure-page-config
+data:
+  index.html: |
+    <html>
+    <head><title>Secure HTTPS App</title></head>
+    <body>
+      <h1>HTTPS Connection Established!</h1>
+    </body>
+    </html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: https-nginx-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: https-nginx
+  template:
+    metadata:
+      labels:
+        app: https-nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.25
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: html-volume
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: html-volume
+        configMap:
+          name: secure-page-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: https-nginx-svc
+spec:
+  selector:
+    app: https-nginx
+  ports:
+  - port: 80
+    targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: https-ingress
+spec:
+  tls:
+  - hosts:
+    - myapp.local
+    secretName: my-tls-secret
+  rules:
+  - host: myapp.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: https-nginx-svc
+            port:
+              number: 80
