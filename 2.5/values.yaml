@@ -1,0 +1,13 @@
+frontend:
+  replicaCount: 1
+  image:
+    repository: nginx
+    tag: "1.24"
+  service:
+    port: 80
+
+backend:
+  replicaCount: 1
+  image:
+    repository: wbitt/network-multitool
+    tag: "latest"
